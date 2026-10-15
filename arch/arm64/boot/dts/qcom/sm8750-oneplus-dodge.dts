@@ -25,6 +25,20 @@
 	compatible = "OnePlus,13", "qcom,sm8750";
 	chassis-type = "handset";
 
+	/* ABL selects by these. The live CPH2653 FDT lists all eight
+	 * sun/sunp pairs, in this order, and board-id 0x40008. Do not
+	 * collapse the pairs: the running tree keeps every one.
+	 */
+	qcom,msm-id = <0x100026a 0x20000>,
+		      <0x27f 0x10000>,
+		      <0x26a 0x10000>,
+		      <0x27f 0x20000>,
+		      <0x26a 0x20000>,
+		      <0x100027f 0x10000>,
+		      <0x100026a 0x10000>,
+		      <0x100027f 0x20000>;
+	qcom,board-id = <0x40008 0x00>;
+
 	aliases {
 		serial0 = &uart7;
 	};
