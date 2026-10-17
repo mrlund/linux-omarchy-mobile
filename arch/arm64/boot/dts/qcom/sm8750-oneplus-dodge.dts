@@ -401,8 +401,10 @@
 		regulator-boot-on;
 	};
 
-	wcn7880-pmu { // No compatible drivers
-		compatible = "qcom,wcn7880-pmu";
+	/* Stock peach rails match this 7850 sequence, including vddio1p2.
+	   The PCI id may still be 0x110e; power-on is the step before that. */
+	wcn7880-pmu {
+		compatible = "qcom,wcn7850-pmu";
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&wlan_en>, <&bt_default>;
@@ -418,7 +420,7 @@
 		vddrfa1p2-supply = <&vreg_s7i_1p2>;
 		vddrfa1p8-supply = <&vreg_s3g_1p8>;
 
-		status = "disabled";
+		status = "okay";
 
 		clocks = <&rpmhcc RPMH_RF_CLK1>;
 
