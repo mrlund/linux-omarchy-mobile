@@ -1405,7 +1405,7 @@
 	status = "okay";
 
 	bluetooth {
-		compatible = "qcom,wcn7880-bt";
+		compatible = "qcom,wcn7860-bt";
 
 		vddrfacmn-supply = <&vreg_pmu_rfa_cmn>;
 		vddaon-supply = <&vreg_pmu_aon_0p59>;
@@ -1416,7 +1416,6 @@
 		vddrfa1p8-supply = <&vreg_pmu_rfa_1p8>;
 
 		max-speed = <3200000>;
-		status = "disabled";
 	};
 };
 
