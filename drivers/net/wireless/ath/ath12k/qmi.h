@@ -8,6 +8,7 @@
 #define ATH12K_QMI_H
 
 #include <linux/mutex.h>
+#include <linux/wait.h>
 #include <linux/soc/qcom/qmi.h>
 
 #define ATH12K_HOST_VERSION_STRING		"WIN"
@@ -31,6 +32,7 @@
 #define QMI_WLFW_FW_MEM_READY_IND_V01		0x0037
 #define QMI_WLFW_FW_READY_IND_V01		0x0038
 #define QMI_WLFW_COLD_BOOT_CAL_DONE_IND_V01	0x003E
+#define ATH12K_COLD_BOOT_FW_RESET_DELAY		(60 * HZ)
 
 #define QMI_WLANFW_MAX_DATA_SIZE_V01		6144
 
@@ -143,6 +145,7 @@ struct ath12k_qmi {
 	u32 target_mem_mode;
 	bool target_mem_delayed;
 	u8 cal_done;
+	wait_queue_head_t cold_boot_waitq;
 
 	/* protected with struct ath12k_qmi::event_lock */
 	bool block_event;
@@ -517,7 +520,12 @@ struct qmi_wlanfw_bdf_download_req_msg_v01 {
 
 struct qmi_wlanfw_bdf_download_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
+	u8 host_bdf_data_valid;
+	u64 host_bdf_data;
 };
+
+/* Bit in the BDF download response. Stock logs it as HW_XPA. */
+#define QMI_WLFW_HW_XPA_V01 1
 
 #define QMI_WLANFW_M3_INFO_REQ_MSG_V01_MAX_MSG_LEN	18
 #define QMI_WLANFW_M3_INFO_REQ_V01		0x003C
@@ -550,7 +558,7 @@ struct qmi_wlanfw_qdss_trace_config_download_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
 };
 
-/* WCN7860 (peach) needs this before board data. Stock cnss sends
+/* Peach (PCI 17cb:110e) needs this before board data. Stock cnss sends
  * tmel_peach_20.elf here. Without it the secured PHY init faults and the
  * later WLAN mode request times out.
  */
@@ -660,6 +668,9 @@ enum ath12k_qmi_firmware_mode {
 
 	/* firmware offline; values 2-3 reserved by firmware ABI */
 	ATH12K_QMI_FIRMWARE_MODE_OFF = 4,
+
+	/* peach cold-boot calibration */
+	ATH12K_QMI_FIRMWARE_MODE_COLD_BOOT = 7,
 };
 
 static inline void ath12k_qmi_set_event_block(struct ath12k_qmi *qmi, bool block)

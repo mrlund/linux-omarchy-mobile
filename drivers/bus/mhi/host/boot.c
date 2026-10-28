@@ -615,7 +615,7 @@ fw_load_ready_state:
 			st = DEV_ST_TRANSITION_FP;
 
 		if (st != DEV_ST_TRANSITION_MAX) {
-			dev_dbg(dev, "EE 0x%x already set, continuing\n", exec);
+			dev_info(dev, "EE 0x%x already set, continuing\n", exec);
 			mhi_queue_state_transition(mhi_cntrl, st);
 		}
 	}

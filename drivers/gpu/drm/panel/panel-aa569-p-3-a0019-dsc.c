@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
+// Copyright (c) 2025 FIXME
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
-//   Copyright (c) 2013, The Linux Foundation. All rights reserved.
+//   Copyright (c) 2013, The Linux Foundation. All rights reserved. (FIXME)
 
 #include <linux/backlight.h>
 #include <linux/delay.h>
@@ -31,12 +32,12 @@ struct panel_aa569_p_3_a0019_dsc *to_panel_aa569_p_3_a0019_dsc(struct drm_panel 
 static void panel_aa569_p_3_a0019_dsc_reset(struct panel_aa569_p_3_a0019_dsc *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
-	msleep(10);
-	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-	msleep(5);
-	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
-	msleep(30);
-
+    msleep(10);
+    gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+    msleep(5);
+    gpiod_set_value_cansleep(ctx->reset_gpio, 0);
+    msleep(30);
+	
 }
 
 static int panel_aa569_p_3_a0019_dsc_on(struct panel_aa569_p_3_a0019_dsc *ctx)
@@ -276,7 +277,7 @@ static int panel_aa569_p_3_a0019_dsc_prepare(struct drm_panel *panel)
 		dev_err(dev, "failed to enable compression mode: %d\n", ret);
 		return ret;
 	}
-
+	
 
 	msleep(28); /* TODO: Is this panel-dependent? */
 
@@ -414,7 +415,7 @@ static int panel_aa569_p_3_a0019_dsc_probe(struct mipi_dsi_device *dsi)
 	if (IS_ERR(ctx->panel.backlight))
 		return dev_err_probe(dev, PTR_ERR(ctx->panel.backlight),
 				     "Failed to create backlight\n");
-
+					 
 
 	drm_panel_add(&ctx->panel);
 
@@ -432,7 +433,7 @@ static int panel_aa569_p_3_a0019_dsc_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.bits_per_component = 10;
 	ctx->dsc.bits_per_pixel = 8 << 4; /* 4 fractional bits */
 	ctx->dsc.block_pred_enable = true;
-
+	
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0) {
@@ -457,7 +458,7 @@ static void panel_aa569_p_3_a0019_dsc_remove(struct mipi_dsi_device *dsi)
 }
 
 static const struct of_device_id panel_aa569_p_3_a0019_dsc_of_match[] = {
-	{ .compatible = "oneplus,dodge-panel" },
+	{ .compatible = "oneplus,dodge-panel" }, // FIXME
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, panel_aa569_p_3_a0019_dsc_of_match);
@@ -472,5 +473,6 @@ static struct mipi_dsi_driver panel_aa569_p_3_a0019_dsc_driver = {
 };
 module_mipi_dsi_driver(panel_aa569_p_3_a0019_dsc_driver);
 
+MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for AA569 P 3 A0019 dsc cmd mode panel");
 MODULE_LICENSE("GPL");

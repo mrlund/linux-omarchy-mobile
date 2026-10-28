@@ -94,7 +94,7 @@
 #define ABS_TOUCH_COST_TIME_KERNEL  0x21
 #define ABS_TOUCH_COST_TIME_ALGO    0x22
 #define ABS_TOUCH_COST_TIME_DAEMON  0x23
-#define MAX_TOUCH_COST_TIME         (1000 * 1000)
+#define MAX_TOUCH_COST_TIME         1000 * 1000
 
 #define TX_NUM 17
 #define RX_NUM 38
@@ -164,7 +164,7 @@
 
 #define IS_ROM_BOOTLOADER_MODE(mode) \
 	(mode == MODE_ROMBOOTLOADER)
-
+	
 #define MAX_NUM_OBJECTS (10)
 
 #define MAX_SIZE_GESTURE_DATA (8)
@@ -878,18 +878,15 @@ void syna_cdev_remove_sysfs(struct syna_tcm *ptcm);
 
 void syna_cdev_redirect_attn(struct syna_tcm *ptcm);
 
-static inline void syna_pal_mutex_lock(struct mutex *ptr)
-{
+static inline void syna_pal_mutex_lock(struct mutex *ptr) {
 	mutex_lock(ptr);
 }
 
-static inline void syna_pal_mutex_unlock(struct mutex *ptr)
-{
+static inline void syna_pal_mutex_unlock(struct mutex *ptr) {
 	mutex_unlock(ptr);
 }
 
-static inline int syna_pal_mem_cpy(void *dest, unsigned int dest_size, const void *src, unsigned int src_size, unsigned int num)
-{
+static inline int syna_pal_mem_cpy(void *dest, unsigned int dest_size, const void *src, unsigned int src_size, unsigned int num) {
 	if (dest == NULL || src == NULL)
 		return -1;
 
@@ -901,8 +898,7 @@ static inline int syna_pal_mem_cpy(void *dest, unsigned int dest_size, const voi
 	return 0;
 }
 
-static inline void *syna_pal_mem_alloc(unsigned int num, unsigned int size)
-{
+static inline void *syna_pal_mem_alloc(unsigned int num, unsigned int size) {
 	if ((int)(num * size) <= 0)
 		return NULL;
 
@@ -910,16 +906,16 @@ static inline void *syna_pal_mem_alloc(unsigned int num, unsigned int size)
 }
 
 static inline int secure_memcpy(unsigned char *dest, unsigned int dest_size,
-				const unsigned char *src, unsigned int src_size,
-				unsigned int count)
+                                const unsigned char *src, unsigned int src_size,
+                                unsigned int count)
 {
     if (dest == NULL || src == NULL)
-	return -EINVAL;
+        return -EINVAL;
 
     if (count > dest_size || count > src_size) {
-	pr_err("%s: src_size = %d, dest_size = %d, count = %d\n",
-	       __func__, src_size, dest_size, count);
-	return -EINVAL;
+        pr_err("%s: src_size = %d, dest_size = %d, count = %d\n",
+               __func__, src_size, dest_size, count);
+        return -EINVAL;
     }
 
     memcpy((void *)dest, (const void *)src, count);
@@ -982,7 +978,7 @@ static inline int syna_tcm_buf_realloc(struct tcm_buffer *pbuf,
 	unsigned char *temp_src;
 	unsigned int temp_size = 0;
 
-	if (!pbuf)
+	if (!pbuf) 
 		return -1;
 
 	if (size > pbuf->buf_size) {
@@ -1076,13 +1072,11 @@ static inline void syna_tcm_buf_unlock(struct tcm_buffer *pbuf)
 	syna_pal_mutex_unlock(&pbuf->buf_mutex);
 }
 
-static inline unsigned int syna_pal_le2_to_uint(const unsigned char *src)
-{
+static inline unsigned int syna_pal_le2_to_uint(const unsigned char *src) {
 	return (unsigned int)src[0] + (unsigned int)src[1] * 0x100;
 }
 
-static inline int syna_pal_completion_wait_for(struct completion *ptr, unsigned int timeout_ms)
-{
+static inline int syna_pal_completion_wait_for(struct completion *ptr, unsigned int timeout_ms) {
 	int retval;
 
 	retval = wait_for_completion_timeout(ptr, msecs_to_jiffies(timeout_ms));
@@ -1139,18 +1133,15 @@ static inline int syna_tcm_write(struct tcm_dev *tcm_dev,
 	return hw_if->ops_write_data(hw_if, wr_data, wr_len);
 }
 
-static inline unsigned int syna_pal_ceil_div(unsigned int dividend, unsigned int divisor)
-{
+static inline unsigned int syna_pal_ceil_div(unsigned int dividend, unsigned int divisor) {
 	return (dividend + divisor - 1) / divisor;
 }
 
-static inline void syna_pal_completion_complete(struct completion *ptr)
-{
+static inline void syna_pal_completion_complete(struct completion *ptr) {
 	complete(ptr);
 }
 
-static inline unsigned int syna_pal_le4_to_uint(const unsigned char *src)
-{
+static inline unsigned int syna_pal_le4_to_uint(const unsigned char *src) {
 	return (unsigned int)src[0] + (unsigned int)src[1] * 0x100 + (unsigned int)src[2] * 0x10000 + (unsigned int)src[3] * 0x1000000;
 }
 
@@ -1172,11 +1163,11 @@ void syna_cdev_update_power_state_report_queue(struct syna_tcm *tcm, bool wakeup
 
 #define RELEASE_BUFFER(buffer) \
 	do { \
-	if (buffer.clone == false) { \
+        if (buffer.clone == false) { \
 			kfree(buffer.buf); \
 			buffer.buf_size = 0; \
 			buffer.data_length = 0; \
-	} \
+        } \
 	} while (0)
 
 struct syna_tcm_report {

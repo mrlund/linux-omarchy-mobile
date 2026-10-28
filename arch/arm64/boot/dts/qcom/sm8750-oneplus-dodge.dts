@@ -152,21 +152,7 @@
 	memory {
 		ddr_device_type = <0x08>;
 		device_type = "memory";
-		reg = <0x00 0x81960000 0x00 0xa0000>,
-		      <0x00 0x81a40000 0x00 0x1c0000>,
-		      <0x00 0x81cf4000 0x00 0xc000>,
-		      <0x00 0x82460000 0x00 0x40000>,
-		      <0x00 0xd8600000 0x00 0x00>,
-		      <0x00 0xe3720000 0x00 0x1c0e0000>,
-		      <0x08 0x80000000 0x00 0x2f700000>,
-		      <0x08 0xb0000000 0x00 0x52c0000>,
-		      <0x0a 0x00 0x02 0x00>,
-		      <0x08 0xc0000000 0x01 0x40000000>,
-		      <0x00 0x82800000 0x00 0x2200000>,
-		      <0x00 0x89d80000 0x00 0x1c80000>,
-		      <0x00 0xa4880000 0x00 0x13780000>,
-		      <0x00 0xb81c0000 0x00 0x1cc63000>,
-		      <0x00 0xd5100000 0x00 0x2f00000>;
+		reg = <0x00 0x81960000 0x00 0xa0000 0x00 0x81a40000 0x00 0x1c0000 0x00 0x81cf4000 0x00 0xc000 0x00 0x82460000 0x00 0x40000 0x00 0xd8600000 0x00 0x00 0x00 0xe3720000 0x00 0x1c0e0000 0x08 0x80000000 0x00 0x2f700000 0x08 0xb0000000 0x00 0x52c0000 0x0a 0x00 0x02 0x00 0x08 0xc0000000 0x01 0x40000000 0x00 0x82800000 0x00 0x2200000 0x00 0x89d80000 0x00 0x1c80000 0x00 0xa4880000 0x00 0x13780000 0x00 0xb81c0000 0x00 0x1cc63000 0x00 0xd5100000 0x00 0x2f00000>;
 	};
 
 
@@ -175,7 +161,7 @@
 		#size-cells = <2>;
 		ranges;
 	};
-
+	
 	pmic-glink {
 		compatible = "qcom,sm8750-pmic-glink",
 			     "qcom,sm8550-pmic-glink",
@@ -1224,20 +1210,18 @@
 	status = "okay";
 };
 
-/*
- * The CDSP and the modem stay disabled, as in sm8750.dtsi, until their
- * firmware, memory carve-outs and power handling work on this phone:
- * probing the modem hands its memory to the modem VM. The firmware names
- * are kept so that enabling one is a status change.
- */
 &remoteproc_cdsp {
 	firmware-name = "qcom/sm8750/OnePlus/cdsp.mbn",
 			"qcom/sm8750/OnePlus/cdsp_dtb.mbn";
+
+	status = "okay";
 };
 
 &remoteproc_mpss {
 	firmware-name = "qcom/sm8750/OnePlus/modem.mbn",
 			"qcom/sm8750/OnePlus/modem_dtb.mbn";
+
+	status = "okay";
 };
 
 &gpu {
@@ -1378,7 +1362,7 @@
 		bias-pull-down;
 		drive-strength = <2>;
 	};
-
+	
 	hall_interrupt_input: hall-interrupt-input-state {
 		pins = "gpio97";
 		function = "gpio";
@@ -1471,7 +1455,7 @@
 };
 
 &pm8010_n {
-	status = "disabled";
+  status = "disabled";
 };
 
 &usb {
@@ -1557,7 +1541,8 @@
 
 /*
  * The two speaker amplifiers (Awinic, product id 0x2308). Their I2S input
- * is Secondary MI2S data1.
+ * is Secondary MI2S data1. The compatible is provisional until the part
+ * has a binding.
  */
 &i2c_hub_4 {
 	status = "okay";
@@ -1580,12 +1565,12 @@
 };
 
 &i2c_hub_3 {
-	status = "okay";
-	bq28z610: fuel-gauge@55 {
-		compatible = "ti,bq27541";
-		reg = <0x55>;
-		monitored-battery = <&bat>;
-	};
+    status = "okay";
+    bq28z610: fuel-gauge@55 {
+        compatible = "ti,bq27541";
+        reg = <0x55>;
+        monitored-battery = <&bat>;
+    };
 };
 
 &reserved_memory {

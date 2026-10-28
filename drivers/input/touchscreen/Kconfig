@@ -531,8 +531,7 @@ config TOUCHSCREEN_S6SY761
 	tristate "Samsung S6SY761 Touchscreen driver"
 	depends on I2C
 	help
-	  Say Y if you have the Samsung S6SY761 driver, or, with SPI, one
-	  of the S6SY79x on an SPI bus (Pixel 6 Pro)
+	  Say Y if you have the Samsung S6SY761 driver
 
 	  If unsure, say N
 
@@ -1251,24 +1250,6 @@ config TOUCHSCREEN_STMFTS
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called stmfts.
-
-config TOUCHSCREEN_SALIXP
-	tristate "STMicroelectronics SALIXP SPI touchscreen"
-	depends on SPI
-	help
-	  Say Y here for the STMicroelectronics SALIXP touch controller
-	  (chip id 36 40) over SPI. The driver sends a hardware-register
-	  read (opcode 0xfb), a framebuffer read (opcode 0xa7), a FIFO
-	  read (opcode 0x87), and one scan command (0xa0 00 ff). It
-	  toggles reset once after the system-info read. It never sends
-	  opcode 0xfa, a flash or config write, a system or load
-	  command, or the setScanMode preamble. It does not request the
-	  interrupt. Probe stops before the scan command on a config CRC
-	  event (0x20 or 0x21), and on a missing scan echo. It does not
-	  send the scan command again.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called salixp.
 
 config TOUCHSCREEN_STMPE
 	tristate "STMicroelectronics STMPE touchscreens"

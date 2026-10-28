@@ -853,11 +853,10 @@ static void dsi_ctrl_enable(struct msm_dsi_host *msm_host,
 		/* Do not swap RGB colors */
 		data = DSI_CMD_CFG0_RGB_SWAP(SWAP_RGB);
 		/*
-		 * With DSC and an RGB101010 panel (the AA569 on the OnePlus 13)
-		 * the RGB101010 command DST format makes the first DCS command
-		 * time out (cmd dma tx -110), while RGB888, which older kernels
-		 * programmed here, works. Keep RGB888 with DSC until the cause
-		 * is understood.
+		 * dodge (AA569, DSC, RGB101010): the 6.16 base had no RGB101010
+		 * case here and programmed RGB888, which works. With the 7.3
+		 * RGB101010 value the first DCS command times out (cmd dma tx
+		 * -110). Keep RGB888 when DSC is on until that is understood.
 		 */
 		if (msm_host->dsc && mipi_fmt == MIPI_DSI_FMT_RGB101010)
 			data |= DSI_CMD_CFG0_DST_FORMAT(CMD_DST_FORMAT_RGB888);

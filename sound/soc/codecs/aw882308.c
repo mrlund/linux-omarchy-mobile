@@ -147,7 +147,7 @@ static int aw882308_start(struct aw882308 *aw)
 
 	regmap_read(aw->regmap, AW_SYSST, &st);
 	regmap_read(aw->regmap, AW_SYSCTRL, &ctrl);
-	dev_dbg(aw->dev, "running: SYSST 0x%04x SYSCTRL 0x%04x atten %u\n",
+	dev_info(aw->dev, "running: SYSST 0x%04x SYSCTRL 0x%04x atten %u\n",
 		 st, ctrl, aw->atten);
 	return 0;
 fail:
@@ -198,28 +198,15 @@ static int aw882308_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 	switch (params_width(params)) {
-	case 16:
-		fs = 0;
-		break;
-	case 24:
-		fs = 2;
-		break;
-	case 32:
-		fs = 3;
-		break;
-	default:
-		return -EINVAL;
+	case 16: fs = 0; break;
+	case 24: fs = 2; break;
+	case 32: fs = 3; break;
+	default: return -EINVAL;
 	}
 	switch (width * params_channels(params)) {
-	case 32:
-		bck = 0;
-		break;
-	case 48:
-		bck = 1;
-		break;
-	case 64:
-		bck = 2;
-		break;
+	case 32: bck = 0; break;
+	case 48: bck = 1; break;
+	case 64: bck = 2; break;
 	default:
 		dev_err(aw->dev, "unsupported frame of %u bits\n",
 			width * params_channels(params));
@@ -234,7 +221,7 @@ static int aw882308_hw_params(struct snd_pcm_substream *substream,
 			   I2SCTRL1_CHSEL | I2SCTRL1_I2SMD | I2SCTRL1_I2SFS |
 			   I2SCTRL1_I2SBCK | I2SCTRL1_I2SSR, val);
 	regmap_read(aw->regmap, AW_I2SCTRL1, &val);
-	dev_dbg(aw->dev, "I2SCTRL1 0x%04x\n", val);
+	dev_info(aw->dev, "I2SCTRL1 0x%04x\n", val);
 	return 0;
 }
 
@@ -463,14 +450,8 @@ static int aw882308_probe(struct i2c_client *i2c)
 		aw882308_apply_fw(aw, 0);
 	aw882308_stop(aw);
 
-	/*
-	 * min_atten is a module parameter; keep it inside the volume field
-	 * so the control range cannot underflow.
-	 */
-	min_atten = min(min_atten, AW_MUTE_VOL);
-
-	/* Start quiet: attenuation 700 of 1023, or min_atten if higher. */
-	aw->atten = max(min_atten, 700u);
+	/* Start at the quietest allowed level above mute. */
+	aw->atten = min(AW_MUTE_VOL, max(min_atten, 700u));
 	dev_info(dev, "chip 0x%04x, chsel %u, atten floor %u\n", id, aw->chsel,
 		 min_atten);
 

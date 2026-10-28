@@ -73,16 +73,14 @@ static struct spi_transfer *xfer;
 
 struct platform_device *syna_spi_device;
 
-static struct device *syna_request_managed_device(void)
-{
+static struct device *syna_request_managed_device(void) {
 	if (!syna_spi_device)
 		return NULL;
 
 	return syna_spi_device->dev.parent;
 }
 
-static void syna_spi_hw_reset(struct syna_hw_interface *hw_if)
-{
+static void syna_spi_hw_reset(struct syna_hw_interface *hw_if) {
 	struct syna_hw_rst_data *rst = &hw_if->bdata_rst;
 
 	if (rst->reset_gpio >= 0) {
@@ -95,8 +93,7 @@ static void syna_spi_hw_reset(struct syna_hw_interface *hw_if)
 	}
 }
 
-static int syna_spi_request_gpio(int gpio, bool config, int dir, int state, char *label)
-{
+static int syna_spi_request_gpio(int gpio, bool config, int dir, int state, char *label) {
 	int retval;
 
 	struct device *dev = syna_request_managed_device();
@@ -111,7 +108,7 @@ static int syna_spi_request_gpio(int gpio, bool config, int dir, int state, char
 		retval = snprintf(label, 16, "tcm_gpio_%d\n", gpio);
 		if (retval < 0)
 			return retval;
-
+		
 		retval = gpio_request(gpio, label);
 		if (retval < 0)
 			return retval;
@@ -156,8 +153,7 @@ err_active_pinctrl:
 	return retval;
 }
 
-static int syna_spi_config_gpio(struct syna_hw_interface *hw_if)
-{
+static int syna_spi_config_gpio(struct syna_hw_interface *hw_if) {
 	int retval;
 	static char str_irq_gpio[32] = {0};
 	static char str_rst_gpio[32] = {0};
@@ -185,8 +181,7 @@ err_set_gpio_irq:
 	return retval;
 }
 
-static int syna_spi_enable_pwr_gpio(struct syna_hw_interface *hw_if, bool en)
-{
+static int syna_spi_enable_pwr_gpio(struct syna_hw_interface *hw_if, bool en) {
 	struct syna_hw_pwr_data *pwr = &hw_if->bdata_pwr;
 	int state = (en) ? pwr->power_on_state : !pwr->power_on_state;
 	int ret = 0;
@@ -206,8 +201,7 @@ static int syna_spi_enable_pwr_gpio(struct syna_hw_interface *hw_if, bool en)
 	return ret;
 }
 
-static int syna_spi_enable_regulator(struct syna_hw_interface *hw_if, bool en)
-{
+static int syna_spi_enable_regulator(struct syna_hw_interface *hw_if, bool en) {
 	int retval;
 	struct syna_hw_pwr_data *pwr = &hw_if->bdata_pwr;
 	struct regulator *vdd_reg = pwr->vdd_reg_dev;
@@ -233,8 +227,7 @@ exit:
 	return retval;
 }
 
-static int syna_spi_power_on(struct syna_hw_interface *hw_if, bool en)
-{
+static int syna_spi_power_on(struct syna_hw_interface *hw_if, bool en) {
 	int retval;
 	struct syna_hw_pwr_data *pwr = &hw_if->bdata_pwr;
 
@@ -251,8 +244,7 @@ static int syna_spi_power_on(struct syna_hw_interface *hw_if, bool en)
 	return 0;
 }
 
-static int syna_spi_get_regulator(struct syna_hw_interface *hw_if, bool get)
-{
+static int syna_spi_get_regulator(struct syna_hw_interface *hw_if, bool get) {
 	int retval;
 	struct device *dev = syna_spi_device->dev.parent;
 	struct syna_hw_pwr_data *pwr = &hw_if->bdata_pwr;
@@ -325,8 +317,7 @@ static int syna_spi_release_psu(struct syna_hw_interface *hw_if)
 	return 0;
 }
 
-static int syna_spi_enable_irq(struct syna_hw_interface *hw_if, bool en)
-{
+static int syna_spi_enable_irq(struct syna_hw_interface *hw_if, bool en) {
 	int retval = 0;
 	struct syna_hw_attn_data *attn = &hw_if->bdata_attn;
 
@@ -343,7 +334,8 @@ static int syna_spi_enable_irq(struct syna_hw_interface *hw_if, bool en)
 
 		enable_irq(attn->irq_id);
 		attn->irq_enabled = true;
-	} else {
+	}
+	else {
 		if (!attn->irq_enabled) {
 			retval = 0;
 			goto exit;
@@ -359,8 +351,7 @@ exit:
 	return retval;
 }
 
-static int syna_spi_parse_dt(struct syna_hw_interface *hw_if, struct device *dev)
-{
+static int syna_spi_parse_dt(struct syna_hw_interface *hw_if, struct device *dev) {
 	int retval;
 	struct property *prop;
 	struct device_node *np = dev->of_node;
@@ -385,7 +376,7 @@ static int syna_spi_parse_dt(struct syna_hw_interface *hw_if, struct device *dev
 	} else {
 		pwr->avdd_gpio = -1;
 	}
-
+	
 	pwr->power_on_state = 1;
 	pwr->power_on_delay_ms = 200;
 
@@ -399,7 +390,7 @@ static int syna_spi_parse_dt(struct syna_hw_interface *hw_if, struct device *dev
 	rst->reset_on_state = 0;
 	rst->reset_active_ms = 10;
 	rst->reset_delay_ms = 80;
-
+	
 	bus->spi_byte_delay_us = 0;
 	bus->spi_block_delay_us = 0;
 	bus->spi_mode = 0;
@@ -425,8 +416,7 @@ static int syna_spi_parse_dt(struct syna_hw_interface *hw_if, struct device *dev
 	return 0;
 }
 
-static int syna_spi_alloc_mem(unsigned int count, unsigned int size)
-{
+static int syna_spi_alloc_mem(unsigned int count, unsigned int size) {
 	static unsigned int xfer_count;
 
 	if (count > xfer_count) {
@@ -468,8 +458,7 @@ static int syna_spi_alloc_mem(unsigned int count, unsigned int size)
 	return 0;
 }
 
-static int syna_spi_read(struct syna_hw_interface *hw_if, unsigned char *rd_data, unsigned int rd_len)
-{
+static int syna_spi_read(struct syna_hw_interface *hw_if, unsigned char *rd_data, unsigned int rd_len) {
 	int retval;
 	unsigned int idx;
 	struct spi_message msg;
@@ -521,8 +510,7 @@ exit:
 	return retval;
 }
 
-static int syna_spi_write(struct syna_hw_interface *hw_if, unsigned char *wr_data, unsigned int wr_len)
-{
+static int syna_spi_write(struct syna_hw_interface *hw_if, unsigned char *wr_data, unsigned int wr_len) {
 	int retval;
 	unsigned int idx;
 	struct spi_message msg;

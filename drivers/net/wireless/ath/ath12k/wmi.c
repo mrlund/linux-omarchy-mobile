@@ -4755,6 +4755,11 @@ static int ath12k_wmi_hw_mode_caps(struct ath12k_base *soc,
 
 	ath12k_dbg(soc, ATH12K_DBG_WMI, "num hw modes %u preferred_hw_mode %d\n",
 		   svc_ext_info->num_hw_modes, soc->wmi_ab.preferred_hw_mode);
+	if (soc->id.device == 0x110e)
+		ath12k_info(soc, "wmi %u hw modes, preferred %d, phy map 0x%x\n",
+			    svc_ext_info->num_hw_modes,
+			    soc->wmi_ab.preferred_hw_mode,
+			    le32_to_cpu(svc_rdy_ext->pref_hw_mode_caps.phy_id_map));
 
 	if (soc->wmi_ab.preferred_hw_mode == WMI_HOST_HW_MODE_MAX)
 		return -EINVAL;

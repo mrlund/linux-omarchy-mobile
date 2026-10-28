@@ -830,9 +830,8 @@ void mhi_pm_st_worker(struct work_struct *work)
 			/*
 			 * Same race as the SBL entry: the AMSS execution
 			 * environment can show up in BHI_EXECENV with no EE
-			 * event. Poll for up to 2 s (20 x 100 ms). The event
-			 * still works if it arrives on its own; a duplicate
-			 * MISSION_MODE transition is ignored below.
+			 * event. Poll briefly. The event still works if it
+			 * arrives on its own.
 			 */
 			{
 				int n;
@@ -842,8 +841,8 @@ void mhi_pm_st_worker(struct work_struct *work)
 
 					if (!mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi,
 							  BHI_EXECENV, &exec))
-						dev_dbg(&mhi_cntrl->mhi_dev->dev,
-							"post-AMSS %d ee=0x%x\n", n, exec);
+						dev_info(&mhi_cntrl->mhi_dev->dev,
+							 "post-AMSS %d ee=0x%x\n", n, exec);
 					if (exec == MHI_EE_AMSS || exec == MHI_EE_WFW ||
 					    exec == MHI_EE_FP) {
 						mhi_queue_state_transition(mhi_cntrl,

@@ -65,6 +65,30 @@ static const struct qmi_elem_info wlfw_host_mlo_chip_info_s_v01_ei[] = {
 	},
 };
 
+static const struct qmi_elem_info qmi_wlanfw_host_ddr_range_ei[] = {
+	{
+		.data_type	= QMI_UNSIGNED_8_BYTE,
+		.elem_len	= 1,
+		.elem_size	= sizeof(u64),
+		.array_type	= NO_ARRAY,
+		.tlv_type	= 0,
+		.offset		= offsetof(struct qmi_wlanfw_host_ddr_range, start),
+	},
+	{
+		.data_type	= QMI_UNSIGNED_8_BYTE,
+		.elem_len	= 1,
+		.elem_size	= sizeof(u64),
+		.array_type	= NO_ARRAY,
+		.tlv_type	= 0,
+		.offset		= offsetof(struct qmi_wlanfw_host_ddr_range, size),
+	},
+	{
+		.data_type	= QMI_EOTI,
+		.array_type	= NO_ARRAY,
+		.tlv_type	= QMI_COMMON_TLV_TYPE,
+	},
+};
+
 static const struct qmi_elem_info qmi_wlanfw_host_cap_req_msg_v01_ei[] = {
 	{
 		.data_type	= QMI_OPT_FLAG,
@@ -362,6 +386,7 @@ static const struct qmi_elem_info qmi_wlanfw_host_cap_req_msg_v01_ei[] = {
 		.tlv_type	= 0x1F,
 		.offset		= offsetof(struct qmi_wlanfw_host_cap_req_msg_v01,
 					   ddr_range),
+		.ei_array	= qmi_wlanfw_host_ddr_range_ei,
 	},
 	{
 		.data_type	= QMI_OPT_FLAG,
@@ -1614,6 +1639,24 @@ static const struct qmi_elem_info qmi_wlanfw_bdf_download_resp_msg_v01_ei[] = {
 		.ei_array	= qmi_response_type_v01_ei,
 	},
 	{
+		.data_type	= QMI_OPT_FLAG,
+		.elem_len	= 1,
+		.elem_size	= sizeof(u8),
+		.array_type	= NO_ARRAY,
+		.tlv_type	= 0x10,
+		.offset		= offsetof(struct qmi_wlanfw_bdf_download_resp_msg_v01,
+					   host_bdf_data_valid),
+	},
+	{
+		.data_type	= QMI_UNSIGNED_8_BYTE,
+		.elem_len	= 1,
+		.elem_size	= sizeof(u64),
+		.array_type	= NO_ARRAY,
+		.tlv_type	= 0x10,
+		.offset		= offsetof(struct qmi_wlanfw_bdf_download_resp_msg_v01,
+					   host_bdf_data),
+	},
+	{
 		.data_type	= QMI_EOTI,
 		.array_type	= NO_ARRAY,
 		.tlv_type	= QMI_COMMON_TLV_TYPE,
@@ -2327,6 +2370,12 @@ int ath12k_qmi_host_cap_send(struct ath12k_base *ab)
 	req.cal_done_valid = 1;
 	req.cal_done = ab->qmi.cal_done;
 
+	/* ddr_range can be encoded (ei_array is set above). Both
+	 * windows we tried, size 0x1000000000 and stock's 0x68000000,
+	 * made peach reset before it acknowledged the memory response.
+	 * Leave the field unset.
+	 */
+
 	if (ab->hw_params->qmi_cnss_feature_bitmap) {
 		req.feature_list_valid = 1;
 		req.feature_list = ab->hw_params->qmi_cnss_feature_bitmap;
@@ -2557,6 +2606,11 @@ int ath12k_qmi_respond_fw_mem_request(struct ath12k_base *ab)
 				   &ab->qmi.target_mem[i].paddr,
 				   ab->qmi.target_mem[i].size,
 				   ab->qmi.target_mem[i].type);
+			if (ab->id.device == 0x110e)
+				ath12k_info(ab, "qmi mem seg[%d] type %u size %u addr %pad\n",
+					    i, ab->qmi.target_mem[i].type,
+					    ab->qmi.target_mem[i].size,
+					    &ab->qmi.target_mem[i].paddr);
 		}
 	}
 
@@ -3119,6 +3173,11 @@ static int ath12k_qmi_load_file_target_mem(struct ath12k_base *ab,
 			goto out;
 		}
 
+		if (resp.host_bdf_data_valid)
+			ath12k_info(ab, "qmi host bdf data 0x%llx xpa %u\n",
+				    resp.host_bdf_data,
+				    !!(resp.host_bdf_data & QMI_WLFW_HW_XPA_V01));
+
 		if (type == ATH12K_QMI_FILE_TYPE_EEPROM) {
 			remaining = 0;
 		} else {
@@ -3164,7 +3223,7 @@ int ath12k_qmi_load_bdf_qmi(struct ath12k_base *ab,
 		else
 			type = ATH12K_QMI_BDF_TYPE_BIN;
 
-		ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi board data len %zu type %d\n", bd.len, type);
+		ath12k_info(ab, "qmi board data len %zu type %d\n", bd.len, type);
 		break;
 	case ATH12K_QMI_BDF_TYPE_REGDB:
 		ret = ath12k_core_fetch_regdb(ab, &bd);
@@ -3287,8 +3346,8 @@ static int ath12k_qmi_load_mem_file(struct ath12k_base *ab,
 
 	memcpy(mem->vaddr, fw->data, fw->size);
 	mem->size = fw->size;
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi loaded %s size %zu addr %pad\n",
-		   filename, fw->size, &mem->paddr);
+	ath12k_info(ab, "qmi loaded %s size %zu addr %pad\n",
+		    filename, fw->size, &mem->paddr);
 	release_firmware(fw);
 	return 0;
 }
@@ -3367,7 +3426,7 @@ int ath12k_qmi_wlanfw_m3_info_send(struct ath12k_base *ab)
 	int ret = 0;
 
 	if (ab->hw_params->fw.m3_loader == ath12k_m3_fw_loader_driver) {
-		if (ab->id.device == ATH12K_PCI_DEVICE_ID_WCN7860)
+		if (ab->id.device == 0x110e)
 			ret = ath12k_qmi_load_mem_file(ab, &ab->qmi.m3_mem,
 						       "phy_ucode20.elf");
 		else
@@ -3655,7 +3714,7 @@ static int ath12k_qmi_qdss_cfg_send(struct ath12k_base *ab)
 	u32 remaining;
 	int ret;
 
-	if (ab->id.device != ATH12K_PCI_DEVICE_ID_WCN7860)
+	if (ab->id.device != 0x110e)
 		return 0;
 
 	fw = ath12k_core_firmware_request(ab, "qdss_trace_config_v2.cfg");
@@ -3672,7 +3731,7 @@ static int ath12k_qmi_qdss_cfg_send(struct ath12k_base *ab)
 
 	tmp = fw->data;
 	remaining = fw->size;
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi qdss config len %zu\n", fw->size);
+	ath12k_info(ab, "qmi qdss config len %zu\n", fw->size);
 
 	while (remaining) {
 		req->total_size_valid = 1;
@@ -3727,7 +3786,7 @@ static int ath12k_qmi_qdss_cfg_send(struct ath12k_base *ab)
 		req->seg_id++;
 	}
 
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi qdss config sent\n");
+	ath12k_info(ab, "qmi qdss config sent\n");
 	ret = 0;
 out:
 	kfree(req);
@@ -4109,7 +4168,7 @@ static int ath12k_qmi_tme_lite_info_send(struct ath12k_base *ab)
 	void *vaddr;
 	int ret;
 
-	if (ab->id.device != ATH12K_PCI_DEVICE_ID_WCN7860)
+	if (ab->id.device != 0x110e)
 		return 0;
 
 	fw = ath12k_core_firmware_request(ab, "tmel_peach_20.elf");
@@ -4129,8 +4188,9 @@ static int ath12k_qmi_tme_lite_info_send(struct ath12k_base *ab)
 	req.tme_file = WLANFW_TME_LITE_PATCH_FILE_V01;
 	req.addr = paddr;
 	req.size = fw->size;
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi tme-lite addr %pad size %zu\n",
-		   &paddr, fw->size);
+	if (ab->id.device == 0x110e)
+		ath12k_info(ab, "qmi tme-lite addr %pad size %zu\n",
+			    &paddr, fw->size);
 
 	ret = qmi_txn_init(&ab->qmi.handle, &txn,
 			   qmi_wlanfw_tme_lite_info_resp_msg_v01_ei, &resp);
@@ -4161,8 +4221,7 @@ static int ath12k_qmi_tme_lite_info_send(struct ath12k_base *ab)
 		goto release_fw;
 	}
 
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi tme-lite info sent, %zu bytes\n",
-		   fw->size);
+	ath12k_info(ab, "qmi tme-lite info sent, %zu bytes\n", fw->size);
 	ret = 0;
 
 release_fw:
@@ -4191,10 +4250,10 @@ int ath12k_qmi_event_load_bdf(struct ath12k_qmi *qmi)
 	ret = ath12k_qmi_load_bdf_qmi(ab, ATH12K_QMI_BDF_TYPE_REGDB);
 	if (ret < 0) {
 		ath12k_warn(ab, "qmi failed to load regdb file:%d\n", ret);
-		/* WCN7860 has no upstream regdb in board-2.bin. Keep going
+		/* Peach has no upstream regdb in board-2.bin. Keep going
 		 * so the stock board.bin is still sent.
 		 */
-		if (ab->id.device != ATH12K_PCI_DEVICE_ID_WCN7860)
+		if (ab->id.device != 0x110e)
 			return ret;
 	}
 
@@ -4255,6 +4314,9 @@ static void ath12k_qmi_msg_mem_request_cb(struct qmi_handle *qmi_hdl,
 		ab->qmi.target_mem[i].size = msg->mem_seg[i].size;
 		ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi mem seg type %d size %u\n",
 			   msg->mem_seg[i].type, msg->mem_seg[i].size);
+		if (ab->id.device == 0x110e)
+			ath12k_info(ab, "qmi mem req seg[%d] type %u size %u\n",
+				    i, msg->mem_seg[i].type, msg->mem_seg[i].size);
 	}
 
 	if (test_bit(ATH12K_FLAG_FIXED_MEM_REGION, &ab->dev_flags)) {
@@ -4309,7 +4371,43 @@ static void ath12k_qmi_msg_cold_boot_cal_done_cb(struct qmi_handle *qmi_hdl,
 	struct ath12k_base *ab = qmi->ab;
 
 	ab->qmi.cal_done = 1;
-	ath12k_dbg(ab, ATH12K_DBG_QMI, "qmi cold boot calibration done\n");
+	wake_up(&ab->qmi.cold_boot_waitq);
+	ath12k_info(ab, "qmi cold boot calibration done\n");
+}
+
+/* Peach faults in mission mode unless it has calibrated first. Stock
+ * cnss and the OnePlus 13s mainline port send mode 7, wait for the
+ * calibration-done indication, then mode OFF so the firmware restarts.
+ * The next FW_READY is the mission-mode start.
+ */
+static int ath12k_qmi_process_coldboot_calibration(struct ath12k_base *ab)
+{
+	long time_left;
+	int ret;
+
+	ret = ath12k_qmi_wlanfw_mode_send(ab, ATH12K_QMI_FIRMWARE_MODE_COLD_BOOT);
+	if (ret < 0) {
+		ath12k_warn(ab, "qmi failed to send cold boot mode: %d\n", ret);
+		return ret;
+	}
+
+	time_left = wait_event_timeout(ab->qmi.cold_boot_waitq,
+				       ab->qmi.cal_done == 1,
+				       ATH12K_COLD_BOOT_FW_RESET_DELAY);
+	if (time_left <= 0) {
+		ath12k_warn(ab, "qmi coldboot calibration timed out\n");
+		return -ETIMEDOUT;
+	}
+
+	ret = ath12k_qmi_wlanfw_mode_send(ab, ATH12K_QMI_FIRMWARE_MODE_OFF);
+	if (ret < 0 && ret != -ENETRESET) {
+		ath12k_warn(ab, "qmi failed to send off mode after coldboot: %d\n",
+			    ret);
+		return ret;
+	}
+
+	ath12k_info(ab, "qmi coldboot calibration restart requested\n");
+	return 0;
 }
 
 static const struct qmi_msg_handler ath12k_qmi_msg_handlers[] = {
@@ -4451,6 +4549,9 @@ static void ath12k_qmi_driver_event_work(struct work_struct *work)
 
 			clear_bit(ATH12K_FLAG_CRASH_FLUSH,
 				  &ab->dev_flags);
+			/* Cold boot mode 7 is where the aux MAC wakeup asserts.
+			 * Mission mode sends ini and cfg first.
+			 */
 			ret = ath12k_core_qmi_firmware_ready(ab);
 			if (!ret)
 				set_bit(ATH12K_FLAG_QMI_FW_READY_COMPLETE,
@@ -4498,6 +4599,7 @@ int ath12k_qmi_init_service(struct ath12k_base *ab)
 
 	INIT_LIST_HEAD(&ab->qmi.event_list);
 	spin_lock_init(&ab->qmi.event_lock);
+	init_waitqueue_head(&ab->qmi.cold_boot_waitq);
 	INIT_WORK(&ab->qmi.event_work, ath12k_qmi_driver_event_work);
 
 	ret = qmi_add_lookup(&ab->qmi.handle, QMI_SERVICE_ID_WLFW,

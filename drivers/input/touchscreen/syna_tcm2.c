@@ -322,7 +322,7 @@ static int syna_tcm_get_gesture_data(const unsigned char *report,
 	idx = 0;
 	while (offset < data_end && idx < size) {
 		retval = syna_tcm_get_touch_data(report, report_size, offset, 16, &data);
-		if (retval < 0)
+		if (retval < 0) 
 			return retval;
 		gesture_data->data[idx++] = (unsigned char)(data & 0xff);
 		gesture_data->data[idx++] = (unsigned char)((data >> 8) & 0xff);
@@ -657,7 +657,7 @@ static irqreturn_t syna_dev_isr(int irq, void *data)
 		goto exit;
 
 	tcm->isr_pid = current->pid;
-
+	
 	retval = syna_tcm_get_event_data(tcm->tcm_dev,
 			&code,
 			&tcm->event_data);
@@ -854,7 +854,7 @@ static int syna_dev_set_up_app_fw(struct syna_tcm *tcm)
 
 	if (IS_NOT_APP_FW_MODE(tcm_dev->dev_mode))
 		return -EINVAL;
-
+	
 	retval = syna_tcm_get_app_info(tcm_dev, &tcm_dev->app_info);
 	if (retval < 0)
 			return -EIO;
@@ -943,11 +943,11 @@ static void syna_speedup_resume(struct work_struct *work)
 
 	if (irq_enabled && (hw_if->ops_enable_irq))
 		hw_if->ops_enable_irq(hw_if, true);
-
+	
 	retval = syna_dev_enter_normal_sensing(tcm);
 	if (retval < 0)
 		goto exit;
-
+	
 	tcm->pwr_state = PWR_ON;
 
 	retval = syna_dev_set_up_app_fw(tcm);
@@ -1145,7 +1145,7 @@ static int syna_tcm_v1_continued_read(struct tcm_dev *tcm_dev,
 		retval = syna_tcm_buf_alloc(&tcm_msg->temp, xfer_length + 2);
 		if (retval < 0)
 			goto exit;
-
+		
 		retval = syna_tcm_v1_read(tcm_dev,
 				xfer_length + 2,
 				tcm_msg->temp.buf,
@@ -1314,7 +1314,7 @@ static void syna_tcm_v1_dispatch_report(struct tcm_dev *tcm_dev)
 	syna_tcm_buf_unlock(&tcm_dev->report_buf);
 
 	if (tcm_msg->report_code == REPORT_IDENTIFY) {
-		tcm_dev->is_sleep = false;
+		tcm_dev->is_sleep = false; 
 		syna_tcm_buf_lock(&tcm_msg->in);
 
 		retval = syna_tcm_v1_parse_idinfo(tcm_dev,
@@ -1864,7 +1864,7 @@ static int syna_tcm_v1_detect(struct tcm_dev *tcm_dev, unsigned char *data,
 
 	if (!tcm_dev || !data || size != MESSAGE_HEADER_SIZE)
 		return _EINVAL;
-
+	
 	tcm_msg = &tcm_dev->msg_data;
 
 	header = (struct tcm_v1_message_header *)data;
@@ -2013,7 +2013,7 @@ static int syna_dev_connect(struct syna_tcm *tcm)
 		retval = syna_dev_set_up_app_fw(tcm);
 		if (retval >= 0) {
 			retval = syna_dev_set_up_input_device(tcm);
-			if (retval < 0)
+			if (retval < 0) 
 				goto err_setup_input_dev;
 		}
 
@@ -2195,7 +2195,7 @@ static int syna_dev_probe(struct platform_device *pdev)
 	struct syna_tcm *tcm = NULL;
 	struct tcm_dev *tcm_dev = NULL;
 	struct syna_hw_interface *hw_if = NULL;
-	struct device *syna_spi_pdev;
+	struct device * syna_spi_pdev;
 
 	hw_if = pdev->dev.platform_data;
 	if (!hw_if)
@@ -2204,7 +2204,7 @@ static int syna_dev_probe(struct platform_device *pdev)
 	tcm = syna_pal_mem_alloc(1, sizeof(struct syna_tcm));
 	if (!tcm)
 		return -ENOMEM;
-
+	
 	retval = syna_tcm_allocate_device(&tcm_dev, hw_if, RESP_IN_POLLING);
 	if (retval < 0 || !tcm_dev)
 		goto err_allocate_cdev;
@@ -2219,7 +2219,7 @@ static int syna_dev_probe(struct platform_device *pdev)
 
 	if (retval < 0)
 		goto err_manufacture_info;
-
+	
 	syna_tcm_buf_init(&tcm->event_data);
 
 	mutex_init(&tcm->tp_event_mutex);
@@ -2245,7 +2245,7 @@ static int syna_dev_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, 1);
 	init_completion(&tcm->report_complete);
-
+	
 	retval = tcm->dev_connect(tcm);
 	if (retval < 0) {
 		mutex_destroy(&tcm->mutex);
@@ -2313,8 +2313,7 @@ static void syna_dev_shutdown(struct platform_device *pdev)
 	syna_dev_remove(pdev);
 }
 
-static int syna_spi_suspend(struct device *dev)
-{
+static int syna_spi_suspend(struct device *dev) {
 	struct syna_tcm *tcm = dev_get_drvdata(dev);
 	struct syna_hw_attn_data *attn;
 	if (!tcm || !tcm->hw_if) {
@@ -2329,8 +2328,7 @@ static int syna_spi_suspend(struct device *dev)
 	return 0;
 }
 
-static int syna_spi_resume(struct device *dev)
-{
+static int syna_spi_resume(struct device *dev) {
 	struct syna_tcm *tcm = dev_get_drvdata(dev);
 	struct syna_hw_attn_data *attn;
 
@@ -2362,8 +2360,7 @@ static struct platform_driver syna_dev_driver = {
 	.shutdown = syna_dev_shutdown,
 };
 
-static int __init syna_dev_module_init(void)
-{
+static int __init syna_dev_module_init(void) {
 	int retval;
 	retval = syna_hw_interface_init();
 	if (retval < 0)
@@ -2371,8 +2368,7 @@ static int __init syna_dev_module_init(void)
 	return platform_driver_register(&syna_dev_driver);
 }
 
-static void __exit syna_dev_module_exit(void)
-{
+static void __exit syna_dev_module_exit(void) {
 	platform_driver_unregister(&syna_dev_driver);
 	syna_hw_interface_exit();
 }

@@ -21,7 +21,6 @@
 
 #define ATH12K_PCI_BAR_NUM		0
 #define ATH12K_PCI_DMA_MASK		36
-#define ATH12K_PCI_DMA_MASK_WCN7860	28
 
 #define ATH12K_PCI_IRQ_CE0_OFFSET		3
 
@@ -861,19 +860,21 @@ static int ath12k_pci_claim(struct ath12k_pci *ab_pci, struct pci_dev *pdev)
 		goto disable_device;
 	}
 
-	/* WCN7860 firmware fails when its memory is allocated near the
-	 * top of the 32-bit DMA space (0xfe400000 and up); the vendor
-	 * driver keeps it low. Limit both masks to 256 MiB for it.
+	/* Peach firmware memory landed at the top of the 32-bit DMA
+	 * space (0xfe400000 and up). Stock's window is the low
+	 * 384 MiB. Keep this chip's DMA inside that.
 	 */
-	if (device_id == ATH12K_PCI_DEVICE_ID_WCN7860)
-		ab_pci->dma_mask = DMA_BIT_MASK(ATH12K_PCI_DMA_MASK_WCN7860);
+	if (device_id == 0x110e)
+		ab_pci->dma_mask = DMA_BIT_MASK(28);
 	else
 		ab_pci->dma_mask = DMA_BIT_MASK(ATH12K_PCI_DMA_MASK);
 	dma_set_mask(&pdev->dev, ab_pci->dma_mask);
-	if (device_id == ATH12K_PCI_DEVICE_ID_WCN7860)
+	if (device_id == 0x110e) {
 		dma_set_coherent_mask(&pdev->dev, ab_pci->dma_mask);
-	else
+		ath12k_info(ab, "pci dma mask %d bits\n", 28);
+	} else {
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+	}
 
 	pci_set_master(pdev);
 
