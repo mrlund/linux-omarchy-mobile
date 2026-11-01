@@ -195,10 +195,15 @@ static int sc8280xp_snd_init(struct snd_soc_pcm_runtime *rtd)
 		break;
 	case PRIMARY_MI2S_RX ... QUATERNARY_MI2S_TX:
 	case QUINARY_MI2S_RX ... QUINARY_MI2S_TX:
-		/* Format comes from .codec_dai_fmt on the board's priv_data.
-		 * No headset behind an MI2S amplifier link.
+		/*
+		 * MI2S back ends carry format from .codec_dai_fmt in hw_params
+		 * (cpu DAI set to BP_FP there). Do not return early: boards with
+		 * .wcd_jack still need qcom_snd_wcd_jack_setup from this path
+		 * (sm8450/sm8550/sm8650). set_jack only binds LPI_MI2S_RX_0 /
+		 * TX_CODEC_DMA_*, so PRIMARY..QUINARY amp links still skip
+		 * headset wiring.
 		 */
-		return 0;
+		break;
 	case DISPLAY_PORT_RX_0:
 		/* DISPLAY_PORT dai ids are not contiguous */
 		dp_pcm_id = 0;
