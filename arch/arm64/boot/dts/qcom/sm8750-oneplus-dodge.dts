@@ -1036,6 +1036,15 @@
 	};
 };
 
+/*
+ * Experimental: no QCE driver binds here (CRYPTO_DEV_QCE depends on
+ * BROKEN), so the node's interconnect votes are never claimed and the
+ * interconnect providers wait in sync_state forever.
+ */
+&crypto {
+	status = "disabled";
+};
+
 &ipa {
 	firmware-name = "qcom/sm8750/OnePlus/ipa_fws.mbn";
 	memory-region = <&ipa_fw_mem>;
