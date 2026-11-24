@@ -1529,6 +1529,8 @@
 		compatible = "ti,bq27541";
 		reg = <0x55>;
 		monitored-battery = <&bat>;
+		/* Never answers on this bus; battery data comes from pmic_glink. */
+		status = "disabled";
 	};
 };
 
