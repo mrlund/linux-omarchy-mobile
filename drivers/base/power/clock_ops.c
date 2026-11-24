@@ -177,8 +177,14 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
 	if (IS_ERR(ce->clk)) {
 		ce->status = PCE_STATUS_ERROR;
 		return;
-	} else if (clk_is_enabled_when_prepared(ce->clk)) {
-		/* we defer preparing the clock in that case */
+	} else if (clk_is_enabled_when_prepared(ce->clk) ||
+		   (clk_prepare_holds_provider(ce->clk) && !dev->power.irq_safe)) {
+		/*
+		 * We defer preparing the clock in that case. A clock whose
+		 * provider uses runtime PM is deferred too: kept prepared, it
+		 * would hold the provider (and its power domain votes) resumed
+		 * while this device is runtime suspended.
+		 */
 		ce->status = PCE_STATUS_ACQUIRED;
 		ce->enabled_when_prepared = true;
 	} else if (clk_prepare(ce->clk)) {

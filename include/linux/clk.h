@@ -361,6 +361,7 @@ void clk_bulk_unprepare(int num_clks, const struct clk_bulk_data *clks);
  * to be right.
  */
 bool clk_is_enabled_when_prepared(struct clk *clk);
+bool clk_prepare_holds_provider(struct clk *clk);
 #else /* !CONFIG_HAVE_CLK_PREPARE */
 static inline int clk_prepare(struct clk *clk)
 {
@@ -387,6 +388,11 @@ static inline void clk_bulk_unprepare(int num_clks,
 }
 
 static inline bool clk_is_enabled_when_prepared(struct clk *clk)
+{
+	return false;
+}
+
+static inline bool clk_prepare_holds_provider(struct clk *clk)
 {
 	return false;
 }

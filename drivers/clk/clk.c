@@ -1490,6 +1490,20 @@ bool clk_is_enabled_when_prepared(struct clk *clk)
 }
 EXPORT_SYMBOL_GPL(clk_is_enabled_when_prepared);
 
+/**
+ * clk_prepare_holds_provider - does a prepared clock keep its provider resumed
+ * @clk: clock source
+ *
+ * True when the clock's provider uses runtime PM: clk_prepare() resumes the
+ * provider and keeps it resumed until clk_unprepare(), whether or not the
+ * clock is enabled.
+ */
+bool clk_prepare_holds_provider(struct clk *clk)
+{
+	return clk && clk->core->rpm_enabled;
+}
+EXPORT_SYMBOL_GPL(clk_prepare_holds_provider);
+
 static int clk_core_prepare_enable(struct clk_core *core)
 {
 	int ret;
