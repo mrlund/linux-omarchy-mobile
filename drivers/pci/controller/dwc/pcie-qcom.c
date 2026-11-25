@@ -2403,8 +2403,13 @@ static int qcom_pcie_suspend_noirq(struct device *dev)
 				dev_err(dev, "Failed to disable CPU-PCIe interconnect path: %d\n",
 					ret);
 
-			if (pcie->use_pm_opp)
-				dev_pm_opp_set_opp(pcie->pci->dev, NULL);
+			/*
+			 * Keep the OPP vote: with the link up, the OPP also
+			 * carries the PCIe-MEM bandwidth vote, which the
+			 * non-OPP case above keeps at a minimum for the same
+			 * reason. Dropping it leaves the active link without
+			 * any DDR vote while the CPUs sleep.
+			 */
 		}
 	}
 	return ret;
