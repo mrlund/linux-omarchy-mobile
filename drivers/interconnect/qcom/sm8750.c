@@ -1084,9 +1084,17 @@ static struct qcom_icc_bcm bcm_lp0 = {
 	.nodes = { &qnm_lpass_lpinoc, &qns_lpass_aggnoc },
 };
 
+/*
+ * Keep a minimal MC0 vote in the APPS sleep set. When the last DDR voter
+ * (e.g. PCIe with its link down) drops out and MC0 is zero in the sleep
+ * set, the SoC does not survive the wake from s2idle and is reset via
+ * PS_HOLD about 77 s later. A sleep vote of y = 1 avoids it, at the cost of
+ * keeping DDR at its lowest level instead of letting it collapse.
+ */
 static struct qcom_icc_bcm bcm_mc0 = {
 	.name = "MC0",
 	.keepalive = true,
+	.sleep_floor = true,
 	.num_nodes = 1,
 	.nodes = { &ebi },
 };

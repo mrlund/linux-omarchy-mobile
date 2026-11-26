@@ -122,6 +122,10 @@ static void bcm_aggregate(struct qcom_icc_bcm *bcm)
 		bcm->vote_y[QCOM_ICC_BUCKET_AMC] = 1;
 		bcm->vote_y[QCOM_ICC_BUCKET_WAKE] = 1;
 	}
+
+	if (bcm->sleep_floor && bcm->vote_x[QCOM_ICC_BUCKET_SLEEP] == 0 &&
+	    bcm->vote_y[QCOM_ICC_BUCKET_SLEEP] == 0)
+		bcm->vote_y[QCOM_ICC_BUCKET_SLEEP] = 1;
 }
 
 static inline void tcs_cmd_gen(struct tcs_cmd *cmd, u64 vote_x, u64 vote_y,
