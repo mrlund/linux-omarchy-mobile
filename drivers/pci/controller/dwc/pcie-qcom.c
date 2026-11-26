@@ -308,6 +308,7 @@ struct qcom_pcie {
 	struct gpio_desc *reset;
 	int global_irq;
 	bool use_pm_opp;
+	bool port_d3_forced;
 };
 
 #define to_qcom_pcie(x)		dev_get_drvdata((x)->dev)
@@ -2526,7 +2527,74 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x0302, qcom_fixup_class);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x1000, qcom_fixup_class);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x1001, qcom_fixup_class);
 
+static int qcom_pcie_child_active(struct pci_dev *pdev, void *data)
+{
+	bool *active = data;
+
+	if (pdev->dev.driver || pci_is_enabled(pdev)) {
+		*active = true;
+		return 1;
+	}
+	return 0;
+}
+
+/*
+ * The Root Port's Slot Capabilities advertise hotplug. Without native
+ * pciehp, pci_bridge_d3_possible() then never lets the port into D3, so it
+ * stays in D0 across system suspend, pci_host_common_d3cold_possible()
+ * fails and the link and its interconnect/OPP votes stay up even when no
+ * endpoint is active. If nothing below the port is bound or enabled, allow
+ * D3 for this system suspend only (the PCI core puts the port into D3hot
+ * and restores it on resume), so the host can take the link down.
+ */
+static void qcom_pcie_port_d3(struct qcom_pcie *pcie, bool allow)
+{
+	struct pci_host_bridge *bridge = pcie->pci->pp.bridge;
+	struct pci_dev *port;
+	bool active = false;
+
+	if (!bridge || !bridge->bus)
+		return;
+
+	port = pci_get_slot(bridge->bus, PCI_DEVFN(0, 0));
+	if (!port)
+		return;
+
+	if (allow && port->subordinate)
+		pci_walk_bus(port->subordinate, qcom_pcie_child_active, &active);
+
+	if (allow && !port->bridge_d3 && port->subordinate && !active) {
+		port->bridge_d3 = true;
+		pcie->port_d3_forced = true;
+		pci_info(port, "no active endpoint: allowing D3 for system suspend\n");
+	} else if (!allow && pcie->port_d3_forced) {
+		port->bridge_d3 = false;
+		pcie->port_d3_forced = false;
+	}
+
+	pci_dev_put(port);
+}
+
+static int qcom_pcie_suspend_late(struct device *dev)
+{
+	struct qcom_pcie *pcie = dev_get_drvdata(dev);
+
+	if (pcie && pm_suspend_target_state != PM_SUSPEND_MEM)
+		qcom_pcie_port_d3(pcie, true);
+	return 0;
+}
+
+static int qcom_pcie_resume_early(struct device *dev)
+{
+	struct qcom_pcie *pcie = dev_get_drvdata(dev);
+
+	if (pcie)
+		qcom_pcie_port_d3(pcie, false);
+	return 0;
+}
+
 static const struct dev_pm_ops qcom_pcie_pm_ops = {
+	LATE_SYSTEM_SLEEP_PM_OPS(qcom_pcie_suspend_late, qcom_pcie_resume_early)
 	NOIRQ_SYSTEM_SLEEP_PM_OPS(qcom_pcie_suspend_noirq, qcom_pcie_resume_noirq)
 };
 
