@@ -2527,12 +2527,12 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x0302, qcom_fixup_class);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x1000, qcom_fixup_class);
 DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_QCOM, 0x1001, qcom_fixup_class);
 
-static int qcom_pcie_child_active(struct pci_dev *pdev, void *data)
+static int qcom_pcie_child_wakeup(struct pci_dev *pdev, void *data)
 {
-	bool *active = data;
+	bool *wakeup = data;
 
-	if (pdev->dev.driver || pci_is_enabled(pdev)) {
-		*active = true;
+	if (device_may_wakeup(&pdev->dev)) {
+		*wakeup = true;
 		return 1;
 	}
 	return 0;
@@ -2543,15 +2543,21 @@ static int qcom_pcie_child_active(struct pci_dev *pdev, void *data)
  * pciehp, pci_bridge_d3_possible() then never lets the port into D3, so it
  * stays in D0 across system suspend, pci_host_common_d3cold_possible()
  * fails and the link and its interconnect/OPP votes stay up even when no
- * endpoint is active. If nothing below the port is bound or enabled, allow
- * D3 for this system suspend only (the PCI core puts the port into D3hot
- * and restores it on resume), so the host can take the link down.
+ * endpoint is active. That also leaves an endpoint whose driver powered it
+ * down for suspend (e.g. ath12k without WoWLAN) in D3hot behind a D0 port
+ * with the link up, and it can then fail to return to D0 on resume.
+ *
+ * If no device below the port is wakeup-enabled, allow D3 for this system
+ * suspend only (the PCI core puts the port into D3hot and restores it on
+ * resume), so the host can take the link down. The PCI core still keeps
+ * the port in D0 if an endpoint stays in D0, and the host only turns the
+ * link off once every active endpoint is in D3hot.
  */
 static void qcom_pcie_port_d3(struct qcom_pcie *pcie, bool allow)
 {
 	struct pci_host_bridge *bridge = pcie->pci->pp.bridge;
 	struct pci_dev *port;
-	bool active = false;
+	bool wakeup = false;
 
 	if (!bridge || !bridge->bus)
 		return;
@@ -2561,12 +2567,12 @@ static void qcom_pcie_port_d3(struct qcom_pcie *pcie, bool allow)
 		return;
 
 	if (allow && port->subordinate)
-		pci_walk_bus(port->subordinate, qcom_pcie_child_active, &active);
+		pci_walk_bus(port->subordinate, qcom_pcie_child_wakeup, &wakeup);
 
-	if (allow && !port->bridge_d3 && port->subordinate && !active) {
+	if (allow && !port->bridge_d3 && port->subordinate && !wakeup) {
 		port->bridge_d3 = true;
 		pcie->port_d3_forced = true;
-		pci_info(port, "no active endpoint: allowing D3 for system suspend\n");
+		pci_info(port, "no wakeup-enabled endpoint: allowing D3 for system suspend\n");
 	} else if (!allow && pcie->port_d3_forced) {
 		port->bridge_d3 = false;
 		pcie->port_d3_forced = false;
